@@ -67,14 +67,32 @@ Architecture
 Processing Flow
 ---------------
 
-1.  Place user-wallet-transactions.json in ./data/.
-    
-2.  Run model.py.
-    
-3.  Review outputs: wallet\_credit\_scores.csv (scores) and score\_distribution.png (distribution).
-    
-4.  Update analysis.md with specific findings from your dataset.
-    
+        ┌──────────────────────────────┐
+        │ 1. Place JSON in ./data/     │
+        │ user-wallet-transactions.json
+        └────────────┬─────────────────┘
+                     │
+                     ▼
+        ┌──────────────────────────────┐
+        │ 2. Run model.py              │
+        │    → Data is loaded          │
+        │    → Features extracted      │
+        │    → ML model predicts score │
+        └────────────┬─────────────────┘
+                     │
+                     ▼
+        ┌──────────────────────────────┐
+        │ 3. Review Outputs            │
+        │    ✔ wallet_credit_scores.csv│
+        │    ✔ score_distribution.png  │
+        └────────────┬─────────────────┘
+                     │
+                     ▼
+        ┌──────────────────────────────┐
+        │ 4. Update analysis.md        │
+        │    → Add insights/plots      │
+        │    → Explain score patterns  │
+        └──────────────────────────────┘
 
 Setup
 -----
