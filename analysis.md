@@ -75,4 +75,4 @@ Recommendations
 *   **Data Expansion**: Include timestamp for recency or assetSymbol for asset-specific behavior analysis.
     
 
-_To populate this analysis, run generate\_credit\_scores.py on your dataset and update with specific findings._
+_To populate this analysis, run model.py on your dataset and update with specific findings._

@@ -4,7 +4,7 @@ Aave V2 Wallet Credit Scoring
 Overview
 --------
 
-This project assigns credit scores (0-1000) to wallets interacting with the Aave V2 protocol based on transaction behavior. Higher scores indicate reliable usage (high deposits, repayments); lower scores reflect risky behavior (liquidations, over-leveraging).
+This project assigns credit scores (0-1000) to wallets interacting with the Aave V2 protocol based on transaction behavior. Higher scores indicate reliable usage (high deposits, repayments, frequent activity); lower scores reflect risky behavior (liquidations, low activity). The model uses a GradientBoostingRegressor trained on heuristic pseudo-scores to achieve a wider score distribution.
 
 Methodology
 -----------
@@ -23,21 +23,27 @@ Methodology
         
     *   Liquidation count: Number of liquidation events.
         
-*   **Model**: Linear scoring model using normalized features:
+*   **Model**:
     
-    *   Base score: 200
+    1.  **Pseudo-Score**: Heuristic score to bootstrap training:
         
-    *   +300 \* (normalized deposit / (normalized borrow + 1))
+        *   Base: 100
+            
+        *   +300 \* log1p(total\_deposit)
+            
+        *   \-200 \* log1p(liquidation\_count)
+            
+        *   +300 \* repayment\_ratio
+            
+        *   +150 \* log1p(tx\_frequency)
+            
+        *   +200 \* tanh(borrow \* repayment / (deposit + 1))
+            
+        *   Clipped to \[0, 1000\].
+            
+    2.  **GradientBoostingRegressor**: Trained on features and pseudo-scores to predict final scores, clipped to \[0, 1000\].
         
-    *   +400 \* normalized repayment ratio
-        
-    *   \-100 \* normalized liquidation count
-        
-    *   +50 \* normalized transaction frequency
-        
-    *   Scores clipped to \[0, 1000\].
-        
-*   **Validation**: Score distribution plot and analysis of wallet behaviors in analysis.md.
+*   **Validation**: Score distribution plot (score\_distribution.png) and analysis in analysis.md.
     
 
 Architecture
@@ -45,54 +51,50 @@ Architecture
 
 1.  **Data Loading**: Parse JSON, extract actionData fields, compute amount\_usd (amount \* assetPriceUSD).
     
-2.  **Feature Engineering**: Group by userWallet, compute features, handle missing values.
+2.  **Feature Engineering**: Group by userWallet, compute features, handle missing values with zeros, clip repayment ratio to \[0, 1\].
     
-3.  **Scoring**: Normalize features, apply linear scoring formula, clip to \[0, 1000\].
+3.  **Scoring**:
     
-4.  **Output**: Save scores to wallet\_credit\_scores.csv, plot distribution to score\_distribution.png.
+    *   Generate pseudo-scores using heuristic formula with non-linear transformations (log1p, tanh).
+        
+    *   Train GradientBoostingRegressor on normalized features and pseudo-scores.
+        
+    *   Predict final scores for all wallets.
+        
+4.  **Output**: Save scores to wallet\_credit\_scores.csv, plot distribution with mean/median and bin counts to score\_distribution.png.
     
 
 Processing Flow
 ---------------
 
-1.  Run generate\_credit\_scores.py with transactions.json as input.
+1.  Place user-wallet-transactions.json in ./data/.
     
-2.  Script processes data, generates features, computes scores, and saves outputs.
+2.  Run model.py.
     
-3.  Review wallet\_credit\_scores.csv for scores and score\_distribution.png for distribution.
+3.  Review outputs: wallet\_credit\_scores.csv (scores) and score\_distribution.png (distribution).
     
-4.  Check analysis.md for insights on score ranges and wallet behaviors.
+4.  Update analysis.md with specific findings from your dataset.
     
 
 Setup
 -----
 
-1.  Install dependencies: pip install pandas numpy scikit-learn matplotlib seaborn
+1.  pip install -r requirements.txt
     
-2.  Place transactions.json in the repository root.
+2.  Ensure user-wallet-transactions.json is in ./data/.
     
-3.  Run: python generate\_credit\_scores.py
+3.  python model.py
     
 
 Files
 -----
 
-*   generate\_credit\_scores.py: Main script.
+*   model.py: Main script for scoring and plotting.
     
 *   README.md: This file.
     
 *   analysis.md: Score distribution and wallet behavior analysis.
     
-*   wallet\_credit\_scores.csv: Output scores.
+*   wallet\_credit\_scores.csv: Output scores (userWallet, credit\_score).
     
-*   score\_distribution.png: Score distribution plot.
-    
-
-Extensibility
--------------
-
-*   Add features (e.g., transaction recency, asset diversity).
-    
-*   Adjust scoring weights for specific priorities.
-    
-*   Use clustering or supervised models with labeled data.
+*   score\_distribution.png: Histogram of scores with mean/median and bin counts.
